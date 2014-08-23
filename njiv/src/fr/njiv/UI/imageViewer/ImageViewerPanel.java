@@ -17,12 +17,17 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
+
+import com.drew.metadata.Directory;
+import com.drew.metadata.Metadata;
+import com.drew.metadata.Tag;
 
 import net.iharder.dnd.FileDrop;
 import fr.njiv.NjivCaller;
@@ -31,11 +36,22 @@ import fr.njiv.PluginLoader;
 import fr.njiv.Utils;
 import fr.njiv.UI.KeyAction;
 import fr.njiv.UI.KeyActionListener;
+import fr.njiv.UI.UIStyle;
 import fr.njiv.UI.imageViewer.plugin.NjivImageViewerPlugin;
 import fr.njiv.image.NjivImage;
 import fr.njiv.image.NjivImageModificator;
 import fr.njiv.image.modifier.ModifierBlackAndWhite;
 import fr.njiv.image.modifier.ModifierRotate;
+
+import java.awt.BorderLayout;
+import java.awt.GridBagLayout;
+
+import javax.swing.JLabel;
+
+import java.awt.GridBagConstraints;
+import java.awt.Insets;
+
+import javax.swing.border.EmptyBorder;
 
 public class ImageViewerPanel extends JPanel implements NjivCaller {
 	
@@ -53,7 +69,9 @@ public class ImageViewerPanel extends JPanel implements NjivCaller {
 	private BufferedImage toDisplay;
 	
 	// Right click menu
-	private JPopupMenu rightClickMenu;
+	JPopupMenu rightClickMenu;
+	JMenu modifMenu;
+	JMenu pluginMenu;
 	
 	// Array of originals actions
 	// This action are binded with keys in the conf file, and used for defining which key refers to which action
@@ -62,6 +80,10 @@ public class ImageViewerPanel extends JPanel implements NjivCaller {
 		{ "open_file_new", new KeyAction(){ public void todo() { container.openNewFileNewWindow(); } } },
 		{ "save_file"    , new KeyAction(){ public void todo() { container.saveFile();    } } },
 		{ "save_file_as" , new KeyAction(){ public void todo() { container.saveFileAs();  } } },
+		{ "hide_info"    , new KeyAction(){ public void todo() { container.hideInfoPanel();        } } },
+		{ "show_info"    , new KeyAction(){ public void todo() { container.showInfoPanel();        } } },
+		{ "toggle_info"  , new KeyAction(){ public void todo() { container.toggleInfoPanel();      } } },
+		{ "show_exif"    , new KeyAction(){ public void todo() { showExif();              } } },
 		{ "original_size", new KeyAction(){ public void todo() { setZoom(1.0f);           } } },
 		{ "original_pos" , new KeyAction(){ public void todo() { setX(0); setY(0);        } } },
 		{ "refresh"      , new KeyAction(){ public void todo() { container.reload(); setZoom(1.0f);} } },
@@ -127,7 +149,7 @@ public class ImageViewerPanel extends JPanel implements NjivCaller {
 
 		setKeyBinding();
 		setMouseBinding();
-		setRightClickMenu();
+		setMenu();
 		
 		this.setBackground(Color.WHITE);
 		this.setFocusable(true);
@@ -139,7 +161,7 @@ public class ImageViewerPanel extends JPanel implements NjivCaller {
 	/**
 	 * Right click menu
 	 */
-	private void setRightClickMenu() {
+	private void setMenu() {
 		
 		final ImageViewerPanel me = this;
 		rightClickMenu = new JPopupMenu();
@@ -169,9 +191,11 @@ public class ImageViewerPanel extends JPanel implements NjivCaller {
 		
 		// Sub menu
 		JMenu subRightClickMenu = new JMenu("Modifications");
+		modifMenu = new JMenu("Modifications");
 		
 		// Modifiers
 		for(NjivImageModificator modifier : modifiers) {
+			// Right click
 			JMenuItem jmi = new JMenuItem(Utils.capitalizeFirstLetter(modifier.getName()));
 			jmi.setToolTipText(modifier.getDesc());
 			jmi.addMouseListener(new MouseAdapter() {
@@ -182,16 +206,30 @@ public class ImageViewerPanel extends JPanel implements NjivCaller {
 					System.out.println("[i] modifier : "+modifier.getName()+" called (right-click menu)");
 				}
 			});
-
 			subRightClickMenu.add(jmi);
+			
+			// Menubar
+			jmi = new JMenuItem(jmi.getText());
+			jmi.setToolTipText(modifier.getDesc());
+			jmi.addMouseListener(new MouseAdapter() {
+				public void mouseReleased(MouseEvent e) {
+					me.image.modify(modifier);       // Apply the modifier
+					resetSmoothedDisplay();          // Reset the smoothed display
+					repaint();                       // Repaint everything
+					System.out.println("[i] modifier : "+modifier.getName()+" called (menuBar)");
+				}
+			});
+			modifMenu.add(jmi);
 		}
 
 		rightClickMenu.add(subRightClickMenu);
 		
 		// Plugin modifiers
 		JMenu subMenuPlugins = new JMenu("Plugins");
+		pluginMenu = new JMenu("Plugins");
 		
 		for(NjivImageViewerPlugin modifierPlugin : PluginLoader.imageViewerPlugins) {
+			// Right click
 			JMenu subMenuPlugin = new JMenu(modifierPlugin.getName());
 			subMenuPlugin.setToolTipText(modifierPlugin.getDescription());
 			
@@ -213,9 +251,32 @@ public class ImageViewerPanel extends JPanel implements NjivCaller {
 			}
 			
 			subMenuPlugins.add(subMenuPlugin);
+			
+			// Menubar
+			subMenuPlugin = new JMenu(modifierPlugin.getName());
+			subMenuPlugin.setToolTipText(modifierPlugin.getDescription());
+			
+			if(modifierPlugin.getModifiers() != null) {
+				for(NjivImageModificator modifier : modifierPlugin.getModifiers()) {
+					JMenuItem jmi = new JMenuItem(Utils.capitalizeFirstLetter(modifier.getName()));
+					jmi.setToolTipText(modifier.getDesc());
+					jmi.addMouseListener(new MouseAdapter() {
+						public void mouseReleased(MouseEvent e) {
+							me.image.modify(modifier);       // Apply the modifier
+							resetSmoothedDisplay();          // Reset the smoothed display
+							repaint();                       // Repaint everything
+							System.out.println("[i] modifier : "+modifier.getName()+" called (plugin/menuBar)");
+						}
+					});
+					
+					subMenuPlugin.add(jmi);
+				}
+			}
+			
+			pluginMenu.add(subMenuPlugin);	
 		}
-		
-		rightClickMenu.add(subMenuPlugins);	
+
+		rightClickMenu.add(subMenuPlugins);
 	}
 	
 	/**
@@ -309,7 +370,7 @@ public class ImageViewerPanel extends JPanel implements NjivCaller {
 		});
 		
 		// Detect pressed mouse
-		this.addMouseListener(new MouseListener() {
+		this.addMouseListener(new MouseAdapter() {
 			
 			public void mouseReleased(MouseEvent e) {
 				// Cursor back to default
@@ -324,10 +385,6 @@ public class ImageViewerPanel extends JPanel implements NjivCaller {
             		me.rightClickMenu(e);
             	}
 			}
-			
-			public void mouseExited(MouseEvent arg0) {}
-			public void mouseEntered(MouseEvent arg0) {}
-			public void mouseClicked(MouseEvent arg0) {}
 		});
 		
 	}
@@ -627,4 +684,113 @@ public class ImageViewerPanel extends JPanel implements NjivCaller {
 		this.repaint();              // Repaint everything
 	}
 	
+	/**
+	 * @wbp.parser.entryPoint
+	 */
+	public void showExif() {
+		JFrame frmImageMetadataViewer = new JFrame();
+		frmImageMetadataViewer.setTitle("Image metadata viewer");
+		frmImageMetadataViewer.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+		frmImageMetadataViewer.setIconImage(UIStyle.logo);
+		
+		JPanel panel = new JPanel();
+		panel.setBorder(new EmptyBorder(5, 5, 5, 5));
+		frmImageMetadataViewer.getContentPane().add(panel, BorderLayout.CENTER);
+		GridBagLayout gbl_panel = new GridBagLayout();
+		gbl_panel.columnWidths = new int[]{0, 0, 0, 0, 0};
+		gbl_panel.rowHeights = new int[]{0, 0, 0, 0, 0, 0, 0};
+		gbl_panel.columnWeights = new double[]{0.0, 0.0, 0.0, 0.0, Double.MIN_VALUE};
+		gbl_panel.rowWeights = new double[]{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, Double.MIN_VALUE};
+		panel.setLayout(gbl_panel);
+		
+		JLabel lblCreationDate = new JLabel("<html><b>"+"Creation date"+"</b></html>");
+		GridBagConstraints gbc_lblCreationDate = new GridBagConstraints();
+		gbc_lblCreationDate.insets = new Insets(0, 0, 5, 5);
+		gbc_lblCreationDate.gridx = 1;
+		gbc_lblCreationDate.gridy = 0;
+		gbc_lblCreationDate.anchor = GridBagConstraints.WEST;
+		panel.add(lblCreationDate, gbc_lblCreationDate);
+		
+		JLabel lblDate = new JLabel(this.image.getCreationTime().toString());
+		GridBagConstraints gbc_lblDate = new GridBagConstraints();
+		gbc_lblDate.insets = new Insets(0, 0, 5, 5);
+		gbc_lblDate.gridx = 2;
+		gbc_lblDate.gridy = 1;
+		gbc_lblDate.anchor = GridBagConstraints.WEST;
+		panel.add(lblDate, gbc_lblDate);
+		
+		JLabel lblLastModification = new JLabel("<html><b>"+"Last modification"+"</b></html>");
+		GridBagConstraints gbc_lblLastModification = new GridBagConstraints();
+		gbc_lblLastModification.insets = new Insets(0, 0, 5, 5);
+		gbc_lblLastModification.gridx = 1;
+		gbc_lblLastModification.gridy = 2;
+		gbc_lblLastModification.anchor = GridBagConstraints.WEST;
+		panel.add(lblLastModification, gbc_lblLastModification);
+		
+		JLabel lblDate_1 = new JLabel(this.image.getLastModifiedTime().toString());
+		GridBagConstraints gbc_lblDate_1 = new GridBagConstraints();
+		gbc_lblDate_1.insets = new Insets(0, 0, 5, 5);
+		gbc_lblDate_1.gridx = 2;
+		gbc_lblDate_1.gridy = 3;
+		gbc_lblDate_1.anchor = GridBagConstraints.WEST;
+		panel.add(lblDate_1, gbc_lblDate_1);
+		
+		JLabel lblLastAccess = new JLabel("<html><b>"+"Last access"+"</b></html>");
+		GridBagConstraints gbc_lblLastAccess = new GridBagConstraints();
+		gbc_lblLastAccess.insets = new Insets(0, 0, 5, 5);
+		gbc_lblLastAccess.gridx = 1;
+		gbc_lblLastAccess.gridy = 4;
+		gbc_lblLastAccess.anchor = GridBagConstraints.WEST;
+		panel.add(lblLastAccess, gbc_lblLastAccess);
+		
+		JLabel lblDate_2 = new JLabel(this.image.getLastAccessTime().toString());
+		GridBagConstraints gbc_lblDate_2 = new GridBagConstraints();
+		gbc_lblDate_2.insets = new Insets(0, 0, 0, 5);
+		gbc_lblDate_2.gridx = 2;
+		gbc_lblDate_2.gridy = 5;
+		gbc_lblDate_2.anchor = GridBagConstraints.WEST;
+		panel.add(lblDate_2, gbc_lblDate_2);
+		
+		int y = 6;
+		
+		Metadata metadata = image.getMetada();
+		
+		for(Directory directory : metadata.getDirectories()) {
+			
+			JLabel lblTitle = new JLabel("<html><b>"+directory.getName()+"</b></html>");
+			GridBagConstraints gbc_lblTitle = new GridBagConstraints();
+			gbc_lblTitle.insets = new Insets(0, 0, 5, 5);
+			gbc_lblTitle.gridx = 1;
+			gbc_lblTitle.gridy = y;
+			gbc_lblTitle.anchor = GridBagConstraints.WEST;
+			panel.add(lblTitle, gbc_lblTitle);
+			y++;
+			
+			for(Tag tag : directory.getTags()) {
+				System.out.println("   "+tag.getTagName()+" : "+tag.getDescription());
+				
+				JLabel lblKey = new JLabel(tag.getTagName());
+				GridBagConstraints gbc_lblKey = new GridBagConstraints();
+				gbc_lblKey.insets = new Insets(0, 0, 0, 5);
+				gbc_lblKey.gridx = 2;
+				gbc_lblKey.gridy = y;
+				gbc_lblKey.anchor = GridBagConstraints.WEST;
+				panel.add(lblKey, gbc_lblKey);
+				
+				JLabel lblValue = new JLabel(tag.getDescription());
+				GridBagConstraints gbc_lblValue = new GridBagConstraints();
+				gbc_lblValue.gridx = 3;
+				gbc_lblValue.gridy = y;
+				gbc_lblValue.anchor = GridBagConstraints.WEST;
+				panel.add(lblValue, gbc_lblValue);
+				y++;
+			}
+			
+		}
+
+		frmImageMetadataViewer.pack();
+		frmImageMetadataViewer.setResizable(false);
+		frmImageMetadataViewer.setVisible(true);
+	}
+
 }

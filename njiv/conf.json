@@ -21,7 +21,9 @@
             "ctrl+shift+s" : "save_file_as",
             "escape" : "close",
             "ctrl+z" : "undo",
-            "ctrl+y" : "redo"
+            "ctrl+y" : "redo",
+            "i"      : "toggle_info",
+            "e"      : "show_exif"
         },
         "default_size_to_img" : "true",
         "id:default_size_to_img" : "Default image size",

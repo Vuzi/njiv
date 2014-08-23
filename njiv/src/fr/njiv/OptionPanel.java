@@ -139,7 +139,13 @@ public class OptionPanel extends JFrame {
 		JButton btnRevertToDefault = new JButton("Revert to default");
 		btnRevertToDefault.addMouseListener(new MouseAdapter() {
 			public void mouseReleased(MouseEvent e) {
-				System.out.println("[i] Todo");
+				Options.init(fr.njiv.Options.class.getResource("conf.json"));
+				Options.save();
+
+				JOptionPane.showMessageDialog(contentPane,
+					    "<html>Option have been reseted<br/><br/><i>Note that some option reset may need to restart the program to be effective.</i></html>",
+					    "Option reseted",
+					    JOptionPane.INFORMATION_MESSAGE);
 			}
 		});
 		panel_2.add(btnRevertToDefault);

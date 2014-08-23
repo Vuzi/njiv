@@ -46,7 +46,7 @@ public class ImageViewer extends JFrame implements NjivCaller {
 	
 	// Panel where is displayed the image
 	private ImageViewerPanel viewerPanel;
-	private JPanel panel_1;
+	private JPanel infoPanel;
 	
 	// Color
 	private final Color exitInfoColor = new Color(130, 130, 130, 130);
@@ -55,9 +55,9 @@ public class ImageViewer extends JFrame implements NjivCaller {
 	private final Color enterInfoColorText = new Color(255, 255, 255, 240);
 	
 	private JLabel lblResolutionx;
-	private JLabel lblNewLabel_1;
-	private JLabel lblNewLabel;
-	private JLabel lblFormatImagejpeg;
+	private JLabel lblFileSize;
+	private JLabel lblPath;
+	private JLabel lblFormat;
 	
 	private boolean isReady = false;
 	private NjivCaller onCloseListener;
@@ -65,6 +65,7 @@ public class ImageViewer extends JFrame implements NjivCaller {
 	/**
 	 * Create the application.
 	 * @param image 
+	 * @wbp.parser.constructor
 	 */
 	public ImageViewer(NjivImage image, boolean diaporamaImage) {
 		this.diaporamaImage = diaporamaImage;
@@ -117,28 +118,28 @@ public class ImageViewer extends JFrame implements NjivCaller {
 		this.setContentPane(viewerPanel);
 		this.viewerPanel.setLayout(new BorderLayout(0, 0));
 		
-		panel_1 = new JPanel();
-		panel_1.setBorder(new EmptyBorder(10, 10, 10, 10));
-		panel_1.setBackground(exitInfoColor);
-		panel_1.setForeground(exitInfoColorText);
-		panel_1.addMouseListener(new MouseAdapter() {
+		infoPanel = new JPanel();
+		infoPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+		infoPanel.setBackground(exitInfoColor);
+		infoPanel.setForeground(exitInfoColorText);
+		infoPanel.addMouseListener(new MouseAdapter() {
 			
 			public void mouseExited(MouseEvent e) {
-				panel_1.setBackground(exitInfoColor);
-				panel_1.setForeground(exitInfoColorText);
+				infoPanel.setBackground(exitInfoColor);
+				infoPanel.setForeground(exitInfoColorText);
 				
 				me.repaint();
 			}
 			
 			public void mouseEntered(MouseEvent e) {
-				panel_1.setBackground(enterInfoColor);
-				panel_1.setForeground(enterInfoColorText);
+				infoPanel.setBackground(enterInfoColor);
+				infoPanel.setForeground(enterInfoColorText);
 				me.repaint();
 			}
 			
 		});
-		viewerPanel.add(panel_1, BorderLayout.SOUTH);
-		panel_1.setLayout(new GridLayout(0, 2, 0, 0));
+		viewerPanel.add(infoPanel, BorderLayout.SOUTH);
+		infoPanel.setLayout(new GridLayout(0, 2, 0, 0));
 		
 		setInfoPanel();
 	}
@@ -218,6 +219,20 @@ public class ImageViewer extends JFrame implements NjivCaller {
 				new OptionPanel().setVisible(true);
 			}
 		});
+
+		JMenu imageMenu = new JMenu("Image");
+		menuBar.add(imageMenu);
+
+		JMenuItem imageMenuExif = new JMenuItem("Show image metadata");
+		imageMenu.add(imageMenuExif);
+		imageMenuExif.addMouseListener(new MouseAdapter() {
+			public void mouseReleased(MouseEvent e) {
+				viewerPanel.showExif();
+			}
+		});
+
+		imageMenu.add(viewerPanel.modifMenu);
+		imageMenu.add(viewerPanel.pluginMenu);
 		
 		if(!this.diaporamaImage) {
 			JMenu diapo = new JMenu("Diaporama");
@@ -244,38 +259,46 @@ public class ImageViewer extends JFrame implements NjivCaller {
 		// Resolution
 		lblResolutionx = new JLabel();
 		lblResolutionx.setForeground(Color.BLACK);
-		panel_1.add(lblResolutionx);
+		infoPanel.add(lblResolutionx);
 		
 		// File size
-		lblNewLabel_1 = new JLabel();
-		lblNewLabel_1.setForeground(Color.BLACK);
-		panel_1.add(lblNewLabel_1);
+		lblFileSize = new JLabel();
+		lblFileSize.setForeground(Color.BLACK);
+		infoPanel.add(lblFileSize);
 		
 		// Path
-		lblNewLabel = new JLabel();
-		lblNewLabel.setForeground(Color.BLACK);
-		panel_1.add(lblNewLabel);
+		lblPath = new JLabel();
+		lblPath.setForeground(Color.BLACK);
+		infoPanel.add(lblPath);
 		
 		// Format
-		lblFormatImagejpeg = new JLabel();
-		lblFormatImagejpeg.setForeground(Color.BLACK);
-		panel_1.add(lblFormatImagejpeg);
+		lblFormat = new JLabel();
+		lblFormat.setForeground(Color.BLACK);
+		infoPanel.add(lblFormat);
 		
 		updateInfoPanel();
+	}
+
+	public void hideInfoPanel() {
+		infoPanel.setVisible(false);
+	}
+	
+	public void showInfoPanel() {
+		infoPanel.setVisible(true);
 	}
 	
 	/**
 	 * Update the informations of the info panel using the image informations
 	 */
-	void updateInfoPanel() {
+	public void updateInfoPanel() {
 		if(viewerPanel.getScale() == 0.0 || viewerPanel.getScale() == 1.0) {
 			lblResolutionx.setText("Resolution: "+image.getWidth() + "x" + image.getHeight()+" px");
 		} else {
 			lblResolutionx.setText("Resolution: "+image.getWidth() + "x" + image.getHeight()+" px ("+String.format("%.0f", viewerPanel.getScale()*100.0)+"%)");
 		}
-		lblNewLabel_1.setText("File size: "+image.getSizeFormated() + " ( "+image.getSize()+" )");
-		lblNewLabel.setText("Path : "+image.getPath());
-		lblFormatImagejpeg.setText("Format: "+image.getImageFormat());
+		lblFileSize.setText("File size: "+image.getSizeFormated() + " ( "+image.getSize()+" )");
+		lblPath.setText("Path : "+image.getPath());
+		lblFormat.setText("Format: "+image.getImageFormat());
 	}
 	
 	/**
@@ -503,6 +526,13 @@ public class ImageViewer extends JFrame implements NjivCaller {
 	
 	public void setCloseListener(NjivCaller caller) {
 		this.onCloseListener = caller;
+	}
+
+	public void toggleInfoPanel() {
+		if(infoPanel.isVisible())
+			infoPanel.setVisible(false);
+		else
+			infoPanel.setVisible(true);
 	}
 
 }
