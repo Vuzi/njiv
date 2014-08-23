@@ -50,6 +50,8 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 
+import net.iharder.dnd.FileDrop;
+
 import com.json.exceptions.JSONParsingException;
 import com.json.parsers.JSONParser;
 import com.json.parsers.JsonParserFactory;
@@ -67,7 +69,7 @@ import fr.njiv.UI.diaporama.transition.CrossfadingEffect;
 import fr.njiv.UI.diaporama.transition.ToBlackEffect;
 import fr.njiv.catalog.CatalogPanel;
 import fr.njiv.catalog.NjivCatalog;
-import fr.njiv.catalog.PDFCatalog;
+import fr.njiv.catalog.NjivCatalogPlugin;
 import fr.njiv.directory.NjivDirectory;
 import fr.njiv.image.NjivImage;
 
@@ -93,9 +95,7 @@ public class DirectoryViewer extends JFrame {
 	private ArrayList<ImageAdvancedThumbnail> thumbnails;
 
 	// Catalogues
-	private NjivCatalog catalogs[] = {
-			new PDFCatalog()
-	};
+	private NjivCatalog catalogs[] = {};
 	
 	private CatalogPanel catalogPanel;
 	
@@ -201,6 +201,25 @@ public class DirectoryViewer extends JFrame {
 			
 			transitions = list.toArray(transitions);
 		}
+		
+
+		if(PluginLoader.catalogPlugins.size() > 0) {
+			ArrayList<NjivCatalog> list = new ArrayList<NjivCatalog>();
+			
+			// old values
+			for(NjivCatalog catalog : catalogs ) {
+				list.add(catalog);
+			}
+			
+			// plugins
+			for(NjivCatalogPlugin plugin : PluginLoader.catalogPlugins) {
+				for(NjivCatalog catalog : plugin.getCatalogs() ) {
+					list.add(catalog);
+				}
+			}
+			
+			catalogs = list.toArray(catalogs);
+		}
 	}
 
 	/**
@@ -270,7 +289,6 @@ public class DirectoryViewer extends JFrame {
 		panel.setBorder(new EmptyBorder(5, 10, 5, 10));
 		panel.setPreferredSize(new Dimension(400, 600));
 		panel.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
-
 		scrollable = new JPanel();
 		scrollable.setBorder(new EmptyBorder(5, 5, 5, 5));
 		JScrollPane scrollPane = new JScrollPane(scrollable);
@@ -282,6 +300,16 @@ public class DirectoryViewer extends JFrame {
 		FlowLayout fl_scrollable = new FlowLayout(FlowLayout.LEFT, 5, 5);
 		fl_scrollable.setAlignOnBaseline(true);
 		scrollable.setLayout(new VerticalWrapFlowLayout(FlowLayout.LEFT, 5, 5));
+
+		// Drag & drop
+		new  FileDrop(scrollable, new FileDrop.Listener() {
+			public void  filesDropped(File[] files) {
+				// load everything
+				for(File file : files) {
+					loadImage(file.getAbsolutePath());
+				}
+			}
+		});
 		
 		splitPane.setLeftComponent(scrollPane);
 	}

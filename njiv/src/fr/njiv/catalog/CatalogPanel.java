@@ -9,6 +9,7 @@ import java.util.List;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
+import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.AbstractListModel;
 import javax.swing.JButton;
@@ -35,6 +36,8 @@ public class CatalogPanel extends JFrame {
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 		contentPane.setLayout(new BorderLayout(0, 0));
 		setContentPane(contentPane);
+		setTitle("Njiv - Catalog creator");
+		setIconImage(UIStyle.logo);
 		
 		JPanel panel_3 = new JPanel();
 		panel_3.setBorder(new TitledBorder(null, "Catalogue list", TitledBorder.LEADING, TitledBorder.TOP, null, null));
@@ -77,7 +80,10 @@ public class CatalogPanel extends JFrame {
 					catalogOptionPanel.removeAll();
 					if(catalogs.get(list.getSelectedIndex()).hasPanel())
 						catalogOptionPanel.add(catalogs.get(list.getSelectedIndex()).catalogueOptionPanel());
+					else
+						catalogOptionPanel.add(new JLabel("[ No options ]"));
 					catalogOptionPanel.validate();
+					catalogOptionPanel.repaint();
 				}
 			}
 		});

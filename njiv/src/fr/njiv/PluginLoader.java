@@ -5,11 +5,13 @@ import java.util.List;
 
 import fr.njiv.UI.diaporama.plugin.NjivDiaporamaPlugin;
 import fr.njiv.UI.imageViewer.plugin.NjivImageViewerPlugin;
+import fr.njiv.catalog.NjivCatalogPlugin;
 
 public class PluginLoader {
 
 	public static List<NjivImageViewerPlugin> imageViewerPlugins;
 	public static List<NjivDiaporamaPlugin> diaporamaPlugins;
+	public static List<NjivCatalogPlugin> catalogPlugins;
 	
 	public static void init() {
 		// Image viewer
@@ -32,6 +34,12 @@ public class PluginLoader {
 		
 		// Catalogs types
 		System.out.println("[i] Loading catalogs plugins");
+		try {
+			catalogPlugins = new NjivPluginLoader<NjivCatalogPlugin>(NjivCatalogPlugin.class, "plugins/catalog").loadPlugins();
+		} catch (Exception e) {
+			System.out.println("[x] Error while loading plugins for catalogs : "+e.getLocalizedMessage());
+			catalogPlugins = new ArrayList<NjivCatalogPlugin>();
+		}
 	}
 	
 }

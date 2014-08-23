@@ -13,6 +13,7 @@ import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -23,6 +24,7 @@ import javax.swing.JPopupMenu;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 
+import net.iharder.dnd.FileDrop;
 import fr.njiv.NjivCaller;
 import fr.njiv.Options;
 import fr.njiv.PluginLoader;
@@ -112,6 +114,16 @@ public class ImageViewerPanel extends JPanel implements NjivCaller {
 		this.image = image;
 		this.image.addChangeListener(this);
 		this.container = container;
+		
+		// Drag & drop
+		new  FileDrop(this, new FileDrop.Listener() {
+			public void  filesDropped(File[] files) {
+				// load everything
+				for(File file : files) {
+					container.openNewFileNewWindow(file.getAbsolutePath());
+				}
+			}
+		});
 
 		setKeyBinding();
 		setMouseBinding();

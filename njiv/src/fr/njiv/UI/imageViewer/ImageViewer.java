@@ -356,6 +356,20 @@ public class ImageViewer extends JFrame implements NjivCaller {
 
 		}
 	}
+
+	/**
+	 * Open a new file in a new window
+	 */
+	public void openNewFileNewWindow(String filename) {
+		final NjivImage image = Utils.loadImage(filename, this);
+		
+		if(image != null) {
+			System.out.println("[i] Starting the new viewer window...");
+			ImageViewer window = new ImageViewer(image);
+			window.setVisible(true);
+
+		}
+	}
 	
 	/**
 	 * Save the file using its own name and format
